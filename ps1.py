@@ -232,7 +232,7 @@ class cowTransAlgos(object):
 
 
 if __name__=="__main__":
-    test = cowTransAlgos()
-    test.load_cows("ps1_cow_data.txt", 10)
-    test.compareTimes()
-    test.compareResults()
+    space = cowTransAlgos()
+    space.load_cows("ps1_cow_data.txt", 10)
+    space.compareTimes()
+    space.compareResults()
