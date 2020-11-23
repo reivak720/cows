@@ -4,7 +4,6 @@
 
 #author @reivaJ
 from collections import deque
-from statistics import mean
 from time import perf_counter
 from tabulate import tabulate
 import random
