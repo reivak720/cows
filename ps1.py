@@ -2,229 +2,238 @@
 # 6.00.2x Problem Set 1: Space Cows
 
 
-from collections import namedtuple, deque
+#author @reivaJ
+from collections import deque
+from statistics import mean
+from time import perf_counter
+from tabulate import tabulate
 import random
-from ps1_partition import*
-#================================
-# Part A: Transporting Space Cows
-#================================
 
-def load_cows(filename):
-
-    cow_dict = dict()
-
-    f = open(filename, 'r')
-
-    for line in f:
-        line_data = line.split(',')
-        cow_dict[line_data[0]] = int(line_data[1])
-
-    return cow_dict
+#From codereview.stackexchange.com
+def partitions(set_):
+    if not set_:
+        yield []
+        return
+    for i in range(2**len(set_)//2):
+        parts = [set(), set()]
+        for item in set_:
+            parts[i&1].add(item)
+            i >>= 1
+        for b in partitions(parts[1]):
+            yield [parts[0]]+b
 
 
+# This is a helper function that will fetch all of the available
+# partitions for you to use for your brute force algorithm.
+def get_partitions(set_):
+    for partition in partitions(set_):
+        yield [list(elt) for elt in partition]
 
-# Problem 1
-Cow = namedtuple("Cow", "weight name")
+
+# this is an improvement of partitions function designed specifically for this exercesise
+# takes advantage of memoization
+# this was not required by the exercise but the key was given in lectures
+# using memoization to improve recursive fibbonacci
+
+def optimizedPartitions(set_, limit,  memo = []):
+    '''Parameters
+    set: a list of tuples containing (cow.weight, cow.name)
+    limit: type int, maximimum load capacity of spaceship
+    memo: a list for noGo partitions
+    yields partitions in limit scope'''
+    if not set_:
+        yield []
+        return
+    for i in range(2**len(set_)//2):
+        parts = [set(), set()]
+        for item in set_:        
+            parts[i&1].add(item)
+            i >>= 1       
+        if parts[0] in memo:
+            continue
+        elif  sum([part[0] for part in parts[0]]) > limit:
+            memo.append(parts[0])
+            continue
+
+        for b in optimizedPartitions(parts[1], limit):            
+            yield [parts[0]]+b
+
+# and this is it's helper function
+def getOptimizedPartitions(set_, limit, winner = None):
+    '''Parameters:
+    set_: a list containing tuples(cow.weight, cow.name)
+    limit: type int: maximum load capacity of spaceshift  
+    returns the shortest correct answer from optimizedPartitions'''
+   
+    for partition in optimizedPartitions(set_, limit):        
+        if winner == None or len(partition)< len(winner):
+            winner = partition
+        
+    return [[cow[1] for cow in trip] for trip in winner]
 
 
 def greedy_recur_cycle(sorted_cows, limit):
-    '''Inputs,
-     sorted_cows: a deque of sorted Cow objects
-        limit: an int
-    Yields list of cows in each trip'''
+    '''Parameters:
+     sorted_cows: a deque of sorted cows tuples (weight, name)
+        limit: type int
+    Yields list of cow names in each trip'''
     if sorted_cows:
-        cow, *other = sorted_cows
+        cow, *other = sorted_cows   
         sorted_cows.popleft()
-        trip = [cow] # use .name in cow for adding only the names
-        weight = cow.weight
-        for cow in other:
-            if cow.weight + weight <= limit:
-                trip.append(cow) # use .name
-                sorted_cows.remove(cow)
-                weight += cow.weight
-        yield trip
+        trip = [cow[1]] 
+        weight = cow[0]
+        for c in other:
+            if c[0] + weight <= limit:
+                trip.append(c[1]) 
+                sorted_cows.remove(c)
+                weight += c[0]   
+        yield trip        
         yield from greedy_recur_cycle(sorted_cows, limit)
 
 
 
 
-def greedy_cow_transport(cows,limit=10):
-    """
-    Uses a greedy heuristic to determine an allocation of cows that attempts to
-    minimize the number of spaceship trips needed to transport all the cows. The
-    returned allocation of cows may or may not be optimal.
-    The greedy heuristic should follow the following method:
+class cowTransAlgos(object):
 
-    1. As long as the current trip can fit another cow, add the largest cow that will fit
-        to the trip
-    2. Once the trip is full, begin a new trip to transport the remaining cows
-
-    Does not mutate the given dictionary of cows.
-
-    Parameters:
-    cows - a dictionary of name (string), weight (int) pairs
-    limit - weight limit of the spaceship (an int)
-
-    Returns:
-    A list of lists, with each inner list containing the names of cows
-    transported on a particular trip and the overall list containing all the
-    trips
-    """
-    sorted_cows = deque(sorted([Cow(weight, name) for name, weight in cows.items()], reverse = True))
-    return list(greedy_recur_cycle(sorted_cows, limit))
+    def load_cows(self, filename, limit):
+        '''
+        Parameters:
+        filename: a path to a file name containing cows names and weights
+        limit: type int, the maximum load capacity of the spaceship
+        loads cows from file and creates a dictionary'''
+        cow_dict = dict()
+        with open(filename, 'r') as f:
+            for line in f:
+                line_data = line.split(',')
+                cow_dict[line_data[0]] = int(line_data[1])
+        self.cows =  cow_dict
+        self.limit = limit
 
 
+    def create_random_test(self, limit, lengh):
+        '''
+        Parameters:
+        limit: type int, maximum load capacity of spaceship
+        lengh: type int, lengh of desired cow dict
+        creates a random cow dict'''
+        cows = {"Cow_"+str(i): random.randrange(1, limit) for i in range(lengh)}
+        self.cows = cows
+        self.limit = limit
 
-# Problem 2
-def brute_force_cow_transport(cows,limit):
-    """
-    Finds the allocation of cows that minimizes the number of spaceship trips
-    via brute force.  The brute force algorithm should follow the following method:
+    def getParams(self):
+        return self.cows, self.limit
 
-    1. Enumerate all possible ways that the cows can be divided into separate trips
-    2. Select the allocation that minimizes the number of trips without making any trip
-        that does not obey the weight limitation
+    def greedyCowTransport(self):
+        """     
+        Uses a greedy heuristic to determine an allocation of cows that attempts to
+        minimize the number of spaceship trips needed to transport all the cows. The
+        returned allocation of cows may or may not be optimal.
+        Returns:
+        A list of lists, with each inner list containing the names of cows
+        transported on a particular trip and the overall list containing all the
+        trips
+        """
+        sorted_cows = sorted(zip(self.cows.values(), self.cows.keys()), reverse =True)
+        schedule = []
+        while sorted_cows:
+            cow = sorted_cows[0]
+            trip, weight= [cow[1]], cow[0]
+            sorted_cows.remove(cow)
 
-    Does not mutate the given dictionary of cows.
+            for cow in sorted_cows.copy():
+                if cow[0]+ weight <= self.limit:
+                    trip.append(cow[1])
+                    sorted_cows.remove(cow)
+                    weight += cow[0]
+            schedule.append(trip)
+        return schedule
 
-    Parameters:
-    cows - a dictionary of name (string), weight (int) pairs
-    limit - weight limit of the spaceship (an int)
+    def brute_force_cow_transport(self):
+        """
+        Uses bit shift partitions function
+        Parameters:
+        cows - a dictionary of name (string), weight (int) pairs
+        limit - weight limit of the spaceship (an int)
 
-    Returns:
-    A list of lists, with each inner list containing the names of cows
-    transported on a particular trip and the overall list containing all the
-    trips
-    """
+        Returns:
+        A list of lists, with each inner list containing the names of cows
+        transported on a particular trip and the overall list containing all the
+        trips
+        """
 
-    object_cows = [Cow(weight, name) for name, weight in cows.items()]
-    winner = None
-    for trip in get_partitions(object_cows):
-        weights = [sum([cow.weight for cow in item]) for item in trip]
-        if any(weight > limit for weight in weights):
-            pass
-        elif winner == None or len(trip) < len(winner):
-            winner = [[cow for cow in item] for item in trip] # use cow.name for getting only the names
-
-    return winner
-
-
-
-def fast_non_brute_force(cows,limit):
-    '''Uses greedy_recur_cycle to test for best possibility
-    rotating sorted cows len(sorted_cows) - 1 times'''
-
-    object_cows = sorted([Cow(weight, name) for name, weight in cows.items()], reverse = True)
-    winner = None
-    for i in range(len(object_cows)):
-        sorted_cows = deque(object_cows)
-        sorted_cows.rotate(-i)
-        current = list(greedy_recur_cycle(sorted_cows, limit))
-
-        if winner == None or len(winner) > len(current):
-            winner = current
-
-    return winner
-
-
-# Problem 3
-from time import perf_counter
-from tabulate import tabulate
-from statistics import mean
-
-
-def time_it(f, cows, limit):
-    '''Times a function 10 times, returns the average time'''
-    times = []
-    for i in range(5):
-        start_time = perf_counter()
-        f(cows, limit)
-        elapsed_time = perf_counter() - start_time
-        times.append(elapsed_time)
-    return mean(times)
-
-def compare_cow_transport_algorithms():
-    '''prints the time it took for each algorithms to complete using
-        the dictionary provided by the course,
-    prints the trips for each algorithm in table format'''
-
-    cows = load_cows("ps1_cow_data.txt")
-
-    print ("\n", cows)
-    limit = 10
-    for algo in [greedy_cow_transport, brute_force_cow_transport,fast_non_brute_force]:
-
-            itinerary = algo(cows, limit)
-            a_time = time_it(algo, cows, limit)
-            time_data = [["Algorithm", "Average time in seconds"],[algo.__name__, a_time]]
-            print ("\n")
-            print (tabulate(time_data, headers='firstrow'))
-            trip_data = [["Trip"]] + [[trip] for trip in itinerary]
-            print (tabulate(trip_data, headers='firstrow', showindex='always', tablefmt='fancy_grid' ))
+        object_cows = list(zip(self.cows.values(), self.cows.keys()))
+        winner = None
+        for trip in get_partitions(object_cows):
+            weights = [sum([cow[0] for cow in item]) for item in trip]
+            if  any(weight > self.limit for weight in weights) or (winner != None and len(trip)>= len(winner)):
+                pass
+            else:
+                winner = trip        
+        return [[cow[1] for cow in item] for item in winner]
 
 
-# tests
-from collections import defaultdict
-
-def create_random_test(limit, lengh):
-    '''yields 10 random dicts for testing'''
-    for i in range(10):
-        cows = {"Cow"+str(i): random.randrange(1, limit) for i in range(lengh)}
-        yield cows
+    def optimizedBrute(self):
+        '''improved brute force with memoization using optimizedPartitions function'''
+        object_cows = list(zip(self.cows.values(), self.cows.keys()))        
+        return  getOptimizedPartitions(object_cows, self.limit)
 
 
-def tests(limit, test_scope):
-    '''runs 10 different tests for dicts of lengh 1 to test scope
-        times each function, raises error if results from brute_force and non_brute_force differ
-    returns defaultdict containing algorithm names and list of times'''
+    def recursiveGreed(self):
+        """Improves greedy heuristic for finding (in many ocations) an optimal result"""
+        object_cows =sorted(zip(self.cows.values(), self.cows.keys()), reverse =True)
 
-    algos = [greedy_cow_transport, brute_force_cow_transport,fast_non_brute_force]
-    result = defaultdict(list)
-    print (f"\nRunning random tests in scope: 1 - {test_scope - 1}. Please be patient...\n")
-    for i in range(1,test_scope):
-        times = defaultdict(set)
-        for cows in create_random_test(limit, i):
-            lenghts = set()
-            for algo in algos:
-                time = time_it(algo, cows, limit)
-                if algo in [brute_force_cow_transport,fast_non_brute_force]:
-                    lenghts.add(len(algo(cows, limit)))
-                times[algo.__name__].add(time)
-            if len(lenghts) > 1:
-                raise Exception("TEST FAILED FOR COWS: ", cows)
-        for time in times:
-            result[time].append(mean(times[time]))
-    return result
+        winner = None
+        for i in range(len(object_cows)):
+            sorted_cows = deque(object_cows)
+            sorted_cows.rotate(-i)
+            current = list(greedy_recur_cycle(sorted_cows, self.limit))
+
+            if winner == None or len(winner) > len(current):
+                winner = current
+        return winner
 
 
-def represent_it(limit, test_scope):
-    '''Represents the time results of tests
-        in table format
-    '''
-    num_cows = list(range(1, test_scope))
-    result = tests(limit, test_scope)
-    head = ["Num Cows"] + [key+" (s)" for key in result.keys()]
-    rows = []
-    for i in range(len(num_cows)):
-        row = [num_cows[i]] + [result[algo][i] for algo in result]
-        rows.append(row)
-    print (tabulate(rows, headers= head, tablefmt="fancy_grid"))
+    def time_it(self, f, n):
+        '''Times a function(f) n times, returns the mean'''
+        times = 0
+        for i in range(n):
+            start_time = perf_counter()
+            f()
+            times += perf_counter() - start_time        
+        return times/n
+
+    def compareResults(self):
+        '''prints the results given by all four algorithms in table format
+        does not return anything'''       
+        print ("Passengers:\n", self.cows, "\n", "Max Load Limit: ", self.limit, "\n")
+        name_res = [["Algorithm", "Itinerary", "Length"]]
+        for algo in (self.greedyCowTransport, self.brute_force_cow_transport, self.optimizedBrute, self.recursiveGreed):
+            result = algo()
+            name_res.append([algo.__name__, result, len(result)])
+        print (tabulate(name_res, headers='firstrow', tablefmt='fancy_grid' ), "\n")
 
 
+    def compareTimes(self):
+        '''prints a comparison of the times it takes to complete each algorithm
+        times a function 10 times
+        returns nothing'''
+        print ("Timing algorithms for passengers:\n", self.cows, "\n")
+        time_res = [["Algorithm", "Time(s)"]]
+        for algo in (self.greedyCowTransport, self.brute_force_cow_transport, self.optimizedBrute, self.recursiveGreed):
+            time_res.append([algo.__name__, self.time_it(algo, 10)])        
+        print (tabulate(time_res, headers='firstrow'), "\n")
+
+    def getWeights(self,f):
+        '''returns the weight for each trip given by a cow_transport function'''
+        weights = []
+        for trip in f():
+            w = [self.cows[cow] for cow in trip]
+            weights.append(sum(w))
+        return weights
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    compare_cow_transport_algorithms()
-    represent_it(10, 11)
+if __name__=="__main__":
+    test = cowTransAlgos()
+    test.load_cows("ps1_cow_data.txt", 10)
+    test.compareTimes()
+    test.compareResults()
