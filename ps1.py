@@ -35,7 +35,8 @@ def get_partitions(set_):
 # using memoization to improve recursive fibbonacci
 
 def optimizedPartitions(set_, limit,  memo = []):
-    '''Parameters
+    '''
+    Parameters
     set: a list of tuples containing (cow.weight, cow.name)
     limit: type int, maximimum load capacity of spaceship
     memo: a list for noGo partitions
