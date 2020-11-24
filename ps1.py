@@ -39,7 +39,8 @@ def optimizedPartitions(set_, limit,  memo = []):
     set: a list of tuples containing (cow.weight, cow.name)
     limit: type int, maximimum load capacity of spaceship
     memo: a list for noGo partitions
-    yields partitions in limit scope'''
+    yields partitions in limit scope
+    '''
     if not set_:
         yield []
         return
@@ -59,10 +60,12 @@ def optimizedPartitions(set_, limit,  memo = []):
 
 # and this is it's helper function
 def getOptimizedPartitions(set_, limit, winner = None):
-    '''Parameters:
+    '''
+    Parameters:
     set_: a list containing tuples(cow.weight, cow.name)
     limit: type int: maximum load capacity of spaceshift  
-    returns the shortest correct answer from optimizedPartitions'''
+    returns the shortest correct answer from optimizedPartitions
+    '''
    
     for partition in optimizedPartitions(set_, limit):        
         if winner == None or len(partition)< len(winner):
@@ -72,10 +75,12 @@ def getOptimizedPartitions(set_, limit, winner = None):
 
 
 def greedy_recur_cycle(sorted_cows, limit):
-    '''Parameters:
+    '''
+    Parameters:
      sorted_cows: a deque of sorted cows tuples (weight, name)
         limit: type int
-    Yields list of cow names in each trip'''
+    Yields list of cow names in each trip
+    '''
     if sorted_cows:
         cow, *other = sorted_cows   
         sorted_cows.popleft()
@@ -99,7 +104,8 @@ class cowTransAlgos(object):
         Parameters:
         filename: a path to a file name containing cows names and weights
         limit: type int, the maximum load capacity of the spaceship
-        loads cows from file and creates a dictionary'''
+        loads cows from file and creates a dictionary
+        '''
         cow_dict = dict()
         with open(filename, 'r') as f:
             for line in f:
@@ -114,7 +120,8 @@ class cowTransAlgos(object):
         Parameters:
         limit: type int, maximum load capacity of spaceship
         lengh: type int, lengh of desired cow dict
-        creates a random cow dict'''
+        creates a random cow dict
+        '''
         cows = {"Cow_"+str(i): random.randrange(1, limit) for i in range(lengh)}
         self.cows = cows
         self.limit = limit
@@ -172,13 +179,17 @@ class cowTransAlgos(object):
 
 
     def optimizedBrute(self):
-        '''improved brute force with memoization using optimizedPartitions function'''
+        '''
+        improved brute force with memoization using optimizedPartitions function
+        '''
         object_cows = list(zip(self.cows.values(), self.cows.keys()))        
         return  getOptimizedPartitions(object_cows, self.limit)
 
 
     def recursiveGreed(self):
-        """Improves greedy heuristic for finding (in many ocations) an optimal result"""
+        """
+        Improves greedy heuristic for finding (in many ocations) an optimal result
+        """
         object_cows =sorted(zip(self.cows.values(), self.cows.keys()), reverse =True)
 
         winner = None
@@ -193,7 +204,9 @@ class cowTransAlgos(object):
 
 
     def time_it(self, f, n):
-        '''Times a function(f) n times, returns the mean'''
+        '''
+        Times a function(f) n times, returns the mean
+        '''
         times = 0
         for i in range(n):
             start_time = perf_counter()
@@ -202,8 +215,10 @@ class cowTransAlgos(object):
         return times/n
 
     def compareResults(self):
-        '''prints the results given by all four algorithms in table format
-        does not return anything'''       
+        '''
+        prints the results given by all four algorithms in table format
+        does not return anything
+        '''       
         print ("Passengers:\n", self.cows, "\n", "Max Load Limit: ", self.limit, "\n")
         name_res = [["Algorithm", "Itinerary", "Length"]]
         for algo in (self.greedyCowTransport, self.brute_force_cow_transport, self.optimizedBrute, self.recursiveGreed):
@@ -213,9 +228,11 @@ class cowTransAlgos(object):
 
 
     def compareTimes(self):
-        '''prints a comparison of the times it takes to complete each algorithm
+        '''
+        prints a comparison of the times it takes to complete each algorithm
         times a function 10 times
-        returns nothing'''
+        returns nothing
+        '''
         print ("Timing algorithms for passengers:\n", self.cows, "\n")
         time_res = [["Algorithm", "Time(s)"]]
         for algo in (self.greedyCowTransport, self.brute_force_cow_transport, self.optimizedBrute, self.recursiveGreed):
@@ -223,7 +240,9 @@ class cowTransAlgos(object):
         print (tabulate(time_res, headers='firstrow'), "\n")
 
     def getWeights(self,f):
-        '''returns the weight for each trip given by a cow_transport function'''
+        '''
+        returns the weight for each trip given by a cow_transport function
+        '''
         weights = []
         for trip in f():
             w = [self.cows[cow] for cow in trip]
