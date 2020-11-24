@@ -3,8 +3,10 @@
 import unittest
 import ps1 as ct
 from itertools import chain
+improt time
 
-
+def one_sec():
+    return time.sleep(1)
 
 class testHelperFunctions(unittest.TestCase):
     '''test helper functions that are not inside the class cowTransAlgo'''
@@ -97,6 +99,12 @@ class testLoading(unittest.TestCase):
         cows, _ = space.getParams()
         self.assertEqual(1000, len(cows))
 
+        
+    def testTimeIt(self):
+        '''tests timeIt function'''
+        space = ct.cowTransAlgos()
+        result = space.time_it(one_sec, 1)
+        self.assertEqual(round(result, 2), 1.0)
 
 class testGreedy(unittest.TestCase):
     '''test greedyCowTransport function'''
